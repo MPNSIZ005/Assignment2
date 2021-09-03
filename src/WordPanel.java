@@ -1,5 +1,3 @@
-package skeletonCodeAssgnmt2;
-
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Font;
@@ -8,14 +6,17 @@ import java.awt.event.ActionListener;
 import java.util.concurrent.CountDownLatch;
 
 import javax.swing.JButton;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 
 public class WordPanel extends JPanel implements Runnable {
 		public static volatile boolean done;
-		private WordRecord[] words;
+		static WordRecord[] words;
 		private int noWords;
-		private int maxY;
-
+		private static int maxY;
+		static boolean check=true;
+       
+		Thread t;
 		
 		public void paintComponent(Graphics g) {
 		    int width = getWidth();
@@ -29,23 +30,46 @@ public class WordPanel extends JPanel implements Runnable {
 		   //draw the words
 		   //animation must be added 
 		    for (int i=0;i<noWords;i++){	    	
-		    	//g.drawString(words[i].getWord(),words[i].getX(),words[i].getY());	
-		    	g.drawString(words[i].getWord(),words[i].getX(),words[i].getY()+20);  //y-offset for skeleton so that you can see the words	
+		    	g.drawString(words[i].getWord(),words[i].getX(),words[i].getY());	
+			if(words[i].getY()==maxY)
+			{
+			  words[i].resetWord();
+			  WordApp.score.missedWord();
+			  WordApp.set3();
+			}
 		    }
-		   
 		  }
 		
+		WordPanel(JLabel missed) {
+			this(words,maxY);			
+		}
+	
 		WordPanel(WordRecord[] words, int maxY) {
 			this.words=words; //will this work?
 			noWords = words.length;
 			done=false;
 			this.maxY=maxY;		
 		}
-		
-		public void run() {
-			//add in code to animate this
+	    
+		int count=WordApp.totalWords;
+	
+		public synchronized void count(){
+			count--;
 		}
-
+		
+		int a=0;
+		public void run() {
+			for(int i=0;i<words.length;i++){  
+					t= new Thread(new ControlThread(words[i],check));
+					t.start();
+			}
+			
+			while(WordApp.score.getTotal()<=WordApp.totalWords){
+				if(WordApp.score.getTotal()==WordApp.totalWords && a==0){
+					WordApp.GameOver();
+					a++;
+				}
+				repaint();
+			}
+		}
 	}
-
-
