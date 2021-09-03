@@ -1,21 +1,18 @@
-package skeletonCodeAssgnmt2;
-
 public class WordRecord {
 	private String text;
 	private  int x;
 	private int y;
 	private int maxY;
-	private boolean dropped;
+	static boolean dropped;
 	
 	private int fallingSpeed;
 	private static int maxWait=1500;
 	private static int minWait=100;
-
+	static int  c;
 	public static WordDictionary dict;
 	
-
-	
 	WordRecord() {
+		c=WordApp.totalWords;
 		text="";
 		x=0;
 		y=0;	
@@ -23,6 +20,17 @@ public class WordRecord {
 		dropped=false;
 		fallingSpeed=(int)(Math.random() * (maxWait-minWait)+minWait); 
 	}
+	
+	public static synchronized void word2()
+	{
+	   c--;
+	}
+	
+	public static synchronized int getI()
+	{ 
+		return c;
+	}
+	
 	
 	WordRecord(String text) {
 		this();
@@ -85,6 +93,12 @@ public class WordRecord {
 
 	}
 	
+	public synchronized void resetWord2() {
+		resetPos();
+		text=dict.getNewWord();
+		dropped=false;
+		fallingSpeed=0;
+	}
 	public synchronized boolean matchWord(String typedText) {
 		//System.out.println("Matching against: "+text);
 		if (typedText.equals(this.text)) {
@@ -95,7 +109,6 @@ public class WordRecord {
 			return false;
 	}
 	
-
 	public synchronized  void drop(int inc) {
 		setY(y+inc);
 	}
