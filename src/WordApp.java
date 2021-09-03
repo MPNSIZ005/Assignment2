@@ -1,17 +1,15 @@
-package skeletonCodeAssgnmt2;
 
 import javax.swing.*;
-
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.FileInputStream;
 import java.io.IOException;
-
+import java.util.*;
 
 import java.util.Scanner;
 import java.util.concurrent.*;
-//model is separate from the view.
+//model is separate
 
 public class WordApp {
 //shared variables
@@ -27,87 +25,143 @@ public class WordApp {
 	static WordRecord[] words;
 	static volatile boolean done;  //must be volatile
 	static 	Score score = new Score();
-
+    static String text="";
 	static WordPanel w;
-	
-	
+	static WordPanel w2;
+    static  JLabel missed;
+	static ControlMatch m;
+	 static JLabel caught;
+	 static JLabel scr;
+	 static JButton reset;
+	 static JButton startB;
 	
 	public static void setupGUI(int frameX,int frameY,int yLimit) {
 		// Frame init and dimensions
     	JFrame frame = new JFrame("WordGame"); 
     	frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     	frame.setSize(frameX, frameY);
-      JPanel g = new JPanel();
-      g.setLayout(new BoxLayout(g, BoxLayout.PAGE_AXIS)); 
-      g.setSize(frameX,frameY);
     	
+      	JPanel g = new JPanel();
+        g.setLayout(new BoxLayout(g, BoxLayout.PAGE_AXIS)); 
+      	g.setSize(frameX,frameY);
+ 
 		w = new WordPanel(words,yLimit);
 		w.setSize(frameX,yLimit+100);
-	   g.add(w); 
+	    g.add(w);
+	    	    
+	    JPanel txt = new JPanel();
+	    txt.setLayout(new BoxLayout(txt, BoxLayout.LINE_AXIS)); 
+	    caught =new JLabel("Caught: " + score.getCaught() + "    ");
+	    missed =new JLabel("Missed:" + score.getMissed()+ "    ");
+	    scr =new JLabel("Score:" + score.getScore()+ "    "); 
 	    
-      JPanel txt = new JPanel();
-      txt.setLayout(new BoxLayout(txt, BoxLayout.LINE_AXIS)); 
-      JLabel caught =new JLabel("Caught: " + score.getCaught() + "    ");
-      JLabel missed =new JLabel("Missed:" + score.getMissed()+ "    ");
-      JLabel scr =new JLabel("Score:" + score.getScore()+ "    ");    
-      txt.add(caught);
-	   txt.add(missed);
-	   txt.add(scr);
-    
-	    //[snip]
-  
-	   final JTextField textEntry = new JTextField("",20);
+	    txt.add(caught);
+	    txt.add(missed);
+	    txt.add(scr);  
+       
+	    final JTextField textEntry = new JTextField("",20);
+       
 	   textEntry.addActionListener(new ActionListener()
-	   {
+	    {
 	      public void actionPerformed(ActionEvent evt) {
-	         String text = textEntry.getText();
-	          //[snip]
-	         textEntry.setText("");
-	         textEntry.requestFocus();
+	          text = textEntry.getText();
+	          
+	          Thread t2=new Thread(new ControlMatch(words,noWords,text));
+	          t2.start();
+	          
+	          textEntry.setText("");
+	          textEntry.requestFocus();
 	      }
-	   });
+	    });
 	   
 	   txt.add(textEntry);
 	   txt.setMaximumSize( txt.getPreferredSize() );
 	   g.add(txt);
 	    
-	   JPanel b = new JPanel();
-      b.setLayout(new BoxLayout(b, BoxLayout.LINE_AXIS)); 
-	   JButton startB = new JButton("Start");;
+	    JPanel b = new JPanel();
+       b.setLayout(new BoxLayout(b, BoxLayout.LINE_AXIS)); 
+	    startB = new JButton("Start");;
 		
-			// add the listener to the jbutton to handle the "pressed" event
-		startB.addActionListener(new ActionListener()
-		{
-		   public void actionPerformed(ActionEvent e)
-		   {
-		      //[snip]
-		      textEntry.requestFocus();  //return focus to the text entry field
-		   }
-		});
+			startB.addActionListener(new ActionListener()
+		    {
+		      public void actionPerformed(ActionEvent e)
+		      { Thread t=new Thread(w);
+			    t.start();
+                startB.setEnabled(false);
+		    	  textEntry.requestFocus();  //return focus to the text entry field
+		      }
+		    });
+          
 		JButton endB = new JButton("End");;
-			
+	   reset = new JButton("Restart");;
+		JButton exit = new JButton("Quit");;
+		
+		ActionListener al=new ActionListener() {
+		    public void actionPerformed(ActionEvent e) {
+		     System.exit(0);
+		    }
+		};
+		exit.addActionListener(al);
+		
 				// add the listener to the jbutton to handle the "pressed" event
-		endB.addActionListener(new ActionListener()
-		{
-		   public void actionPerformed(ActionEvent e)
-		   {
-		      //[snip]
-		   }
-		});
+				endB.addActionListener(new ActionListener()
+			    {
+			      public void actionPerformed(ActionEvent e)
+			      {
+				    Thread t4=new Thread(new ThreadEnd());//caught,missed,scr,startB));
+				    t4.start();
+	             startB.setEnabled(true);
+			      }
+			    });
+				exit.addActionListener(al);
+				
+				reset.addActionListener(new ActionListener()
+			    {
+			      public void actionPerformed(ActionEvent e)
+			      {
+				    Thread t5=new Thread(new ThreadReset());//caught,missed,scr,startB));
+				    t5.start();
+	             startB.setEnabled(false);
+			      }
+			    });
 		
 		b.add(startB);
 		b.add(endB);
+		b.add(reset);
+		b.add(exit);
 		
 		g.add(b);
     	
-      frame.setLocationRelativeTo(null);  // Center window on screen.
-      frame.add(g); //add contents to window
-      frame.setContentPane(g);     
+      	frame.setLocationRelativeTo(null);  // Center window on screen.
+      	frame.add(g); //add contents to window
+        frame.setContentPane(g);     
        	//frame.pack();  // don't do this - packs it into small space
-      frame.setVisible(true);
+        frame.setVisible(true);
 	}
+	
+public synchronized static void set(){
+	caught.setText("Caught: " + WordApp.score.getCaught() + "    ");
+    missed.setText("Missed:" +WordApp.score.getMissed()+ "    ");
+    scr.setText	("Score:" + WordApp.score.getScore() + "    ");
+}
+	
+public static void GameOver(){
+   JOptionPane.showMessageDialog(null,"GAME OVER! "+totalWords +" Words has fallen"+"           \nCaught Words: " + WordApp.score.getCaught()+"   "+"Missed:" +WordApp.score.getMissed());
+   Thread t4=new Thread(new ThreadEnd());//caught,missed,scr,startB));
+   t4.start();
+   startB.setEnabled(true); 
+}
 
-   public static String[] getDictFromFile(String filename) {
+public static void set2(){
+	caught.setText("Caught: " + WordApp.score.getCaught() + "    ");
+	scr.setText("Score:" + WordApp.score.getScore()+ "    "); 
+}
+
+public static void set3(){
+	  WordApp.missed.setText("Missed:" + WordApp.score.getMissed()+ "    ");
+}
+
+public static String[] getDictFromFile(String filename) {
 		String [] dictStr = null;
 		try {
 			Scanner dictReader = new Scanner(new FileInputStream(filename));
@@ -132,6 +186,7 @@ public class WordApp {
 		totalWords=Integer.parseInt(args[0]);  //total words to fall
 		noWords=Integer.parseInt(args[1]); // total words falling at any point
 		assert(totalWords>=noWords); // this could be done more neatly
+		
 		String[] tmpDict=getDictFromFile(args[2]); //file of words
 		if (tmpDict!=null)
 			dict= new WordDictionary(tmpDict);
@@ -139,9 +194,7 @@ public class WordApp {
 		WordRecord.dict=dict; //set the class dictionary for the words.
 		
 		words = new WordRecord[noWords];  //shared array of current words
-		
-		//[snip]
-		
+			
 		setupGUI(frameX, frameY, yLimit);  
     	//Start WordPanel thread - for redrawing animation
 
