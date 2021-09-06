@@ -1,6 +1,6 @@
 public class Score {
 	private int missedWords;
-	private volitile int caughtWords;
+	private volatile int caughtWords;
 	private int gameScore;
 	
 	Score() {
